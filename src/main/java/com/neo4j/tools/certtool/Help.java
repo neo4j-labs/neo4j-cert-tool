@@ -163,6 +163,17 @@ public final class Help {
               does not protect it from anyone who can read neo4j.conf. Restrict that file to
               the Neo4j service user.
 
+            DATABASE CREDENTIAL
+              --db-credential-file <file>
+                                          Generate a strong random password for the neo4j
+                                          database user and write it to <file> as a single
+                                          line, mode 0600. The password is never printed; the
+                                          file is its only delivery. Usable alongside a
+                                          generate run, or on its own with no --node at all,
+                                          in which case nothing but the credential file is
+                                          written. An existing file is not overwritten unless
+                                          --force is given.
+
             OUTPUT AND INSTALLATION
               --out <dir>                 Output directory. Default: out.
               --install                   Also copy the generated material into a live

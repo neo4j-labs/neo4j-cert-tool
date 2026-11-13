@@ -6,13 +6,13 @@ Run them all with:
     mvn --batch-mode verify
 
 The suite is pure JUnit, needs no network, and stands up local HTTP servers where a test must
-impersonate one (the GitHub release feed, the skill catalog). Counts: 343 test methods, 450
+impersonate one (the GitHub release feed, the skill catalog). Counts: 350 test methods, 457
 executions once parameterized cases are expanded.
 
 The classes cover, in order: certificate content, the command line, dry runs, end-to-end runs,
-file permissions, name constraints, password handling, TLS handshakes, the client truststore,
-self-update, DER encoding, IP literal parsing, PEM encoding, PKCS#8 encryption, key-generation
-strength, signature-algorithm selection, and the agent-skill system.
+file permissions, name constraints, password handling, TLS handshakes, the client truststore, the
+database credential, self-update, DER encoding, IP literal parsing, PEM encoding, PKCS#8
+encryption, key-generation strength, signature-algorithm selection, and the agent-skill system.
 
 ---
 
@@ -278,6 +278,21 @@ applications) load to trust the cluster.
 | Verify | `missingIsOnlyAWarning` | a missing truststore warns without failing, so pre-truststore bundles verify clean |
 | Verify | `corruptFails` | a truststore that does not load fails verification |
 | Verify | `incompleteFails` | a truststore missing an anchor the bundles trust fails verification |
+
+## `DbCredentialTest` — the database credential
+
+`--db-credential-file`: a generated random password for the neo4j database user, written to a
+locked-down file.
+
+| Feature | Test | What it verifies |
+| --- | --- | --- |
+| Credential-only run | `credentialOnlyRun` | a run with no `--node` writes a credential file that is mode 0600 and holds exactly one line: 192 bits of base64url |
+| Output discipline | `passwordIsNotPrinted` | the password never appears in the run's stdout or stderr — the file is its only delivery |
+| Randomness | `passwordsDiffer` | two runs never generate the same password |
+| Overwrite protection | `existingFileIsProtected` | an existing credential file is refused without `--force`, and `--force` replaces it |
+| Combined run | `alongsideAClusterRun` | a cluster run writes the credential alongside the bundles, names it in the summary, and never prints the password |
+| Dry run | `dryRunPlansIt` | a dry run with a cluster plans the credential and writes nothing |
+| Dry run | `standaloneDryRunPlansOnlyTheCredential` | a credential-only dry run plans exactly one file and creates no output directory |
 
 ## `UpdateTest` — self-update
 

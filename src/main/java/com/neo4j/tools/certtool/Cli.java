@@ -210,6 +210,7 @@ public final class Cli {
                 case "ca-cert" -> draft.existingCaCertificate = Path.of(value);
                 case "ca-key" -> draft.existingCaKey = Path.of(value);
                 case "ca-password-file" -> draft.caPasswordFile = Path.of(value);
+                case "db-credential-file" -> draft.dbCredentialFile = Path.of(value);
                 case "password-file" -> {
                     draft.passwordFile = Path.of(value);
                     draft.passwordMode = PasswordProvider.Mode.FILE;
@@ -394,6 +395,7 @@ public final class Cli {
         Path existingCaCertificate;
         Path existingCaKey;
         Path caPasswordFile;
+        Path dbCredentialFile;
         PasswordProvider.Mode passwordMode = PasswordProvider.Mode.PROMPT;
         Path passwordFile;
         boolean sharedPassword;
@@ -450,6 +452,7 @@ public final class Cli {
                     Optional.ofNullable(existingCaCertificate),
                     Optional.ofNullable(existingCaKey),
                     Optional.ofNullable(caPasswordFile),
+                    Optional.ofNullable(dbCredentialFile),
                     nameConstraints,
                     List.copyOf(permitDns),
                     List.copyOf(permitIp),
@@ -535,7 +538,7 @@ public final class Cli {
                                 + "subcommand: 'update check'");
             }
             rejectSkillOnlyOptions();
-            if (nodes.isEmpty()) {
+            if (nodes.isEmpty() && dbCredentialFile == null) {
                 throw new UsageException(
                         """
                         No cluster members were given. Name each one with --node, for example:
@@ -543,7 +546,9 @@ public final class Cli {
                           --node core1:core1.example.com,10.0.0.11 \\
                           --node core2:core2.example.com,10.0.0.12
 
-                        or list them in a file and pass --config cluster.properties.""");
+                        or list them in a file and pass --config cluster.properties. For a
+                        database credential with no certificate material, pass just
+                        --db-credential-file <file>.""");
             }
             if ((existingCaCertificate == null) != (existingCaKey == null)) {
                 throw new UsageException("--ca-cert and --ca-key must be given together");

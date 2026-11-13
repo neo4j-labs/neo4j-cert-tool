@@ -6,12 +6,14 @@ import com.neo4j.tools.certtool.crypto.DistinguishedName;
 import com.neo4j.tools.certtool.crypto.PemFiles;
 import com.neo4j.tools.certtool.model.TrustMode;
 import com.neo4j.tools.certtool.output.BundleWriter;
+import com.neo4j.tools.certtool.output.DbCredential;
 import com.neo4j.tools.certtool.output.FilePermissions;
 import com.neo4j.tools.certtool.output.Layout;
 import com.neo4j.tools.certtool.output.Reporter;
 import com.neo4j.tools.certtool.verify.BundleVerifier;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
@@ -118,6 +120,26 @@ public final class Main {
         Instant now = Instant.now();
 
         reporter.info("neo4j-cert-tool %s", version());
+
+        if (options.dryRun()) {
+            // Returns before any password is asked for and before anything is created.
+            return report(new DryRun(options).plan(), options);
+        }
+
+        if (options.nodes().isEmpty()) {
+            // A credential-only run: no cluster members, no certificate material, no key
+            // passwords — just a generated password in a file. It must come before any password
+            // provider is created, so a prompting run is never prompted for keys it does not
+            // need.
+            Path credential = options.dbCredentialFile().orElseThrow();
+            DbCredential.write(credential, random, options.force());
+            reporter.info("Wrote %s", credential.toAbsolutePath());
+            reporter.info(
+                    "  %-14s random password for the neo4j database user, one line, mode 0600",
+                    "db credential");
+            return EXIT_OK;
+        }
+
         reporter.info("  trust mode     %s (%s)", options.trustMode().optionValue(), options.trustMode().summary());
         reporter.info("  key type       %s", options.keyType().describe());
         reporter.info(
@@ -144,6 +166,18 @@ public final class Main {
 
             reporter.info("Writing to %s", options.outputDirectory().toAbsolutePath());
             new BundleWriter(options, passwords, random, now, reporter).write(result);
+
+            options.dbCredentialFile().ifPresent(credential -> {
+                try {
+                    DbCredential.write(credential, random, options.force());
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+                reporter.info(
+                        "  %-14s %s",
+                        "db credential",
+                        credential + " — random password for the neo4j database user, mode 0600");
+            });
 
             // Read everything back from disk and check it. A tool that produces certificates
             // should not report success until it has confirmed the files it wrote are usable.

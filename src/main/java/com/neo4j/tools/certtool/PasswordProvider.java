@@ -247,11 +247,20 @@ public final class PasswordProvider implements AutoCloseable {
     }
 
     private char[] generate() {
+        return generateOne(random);
+    }
+
+    /**
+     * Generates one random password: 192 bits of entropy, base64url encoded without padding, so
+     * the only characters are ones that are safe to paste into neo4j.conf or a connection string.
+     *
+     * <p>Encoded to bytes rather than through {@code encodeToString}, so the password never
+     * exists as an immutable {@code String} that cannot be zeroed afterwards. The caller owns the
+     * array and is expected to zero it when done.
+     */
+    public static char[] generateOne(SecureRandom random) {
         byte[] entropy = new byte[GENERATED_ENTROPY_BYTES];
         random.nextBytes(entropy);
-        // base64url without padding: only characters that are safe to paste into neo4j.conf.
-        // Encoded to bytes rather than through encodeToString, so the password never exists as an
-        // immutable String that cannot be zeroed afterwards.
         byte[] encoded = Base64.getUrlEncoder().withoutPadding().encode(entropy);
         try {
             char[] password = new char[encoded.length];

@@ -59,6 +59,16 @@ public final class DryRun {
     }
 
     public Plan plan() {
+        // A credential-only run touches nothing but the credential file: no staging tree, no CA,
+        // no key passwords, so no other input matters.
+        if (options.nodes().isEmpty()) {
+            options.dbCredentialFile().ifPresent(file -> add(
+                    file,
+                    false,
+                    FilePermissions.OWNER_READ_WRITE,
+                    "random password for the neo4j database user"));
+            return new Plan(List.copyOf(entries), List.copyOf(blockers));
+        }
         planInputs();
         planStagingTree();
         options.neo4jHome().ifPresent(this::planInstallTree);
@@ -155,6 +165,12 @@ public final class DryRun {
                     FilePermissions.OWNER_READ_ONLY,
                     "settings to merge, contains the key password");
         }
+
+        options.dbCredentialFile().ifPresent(file -> add(
+                file,
+                false,
+                FilePermissions.OWNER_READ_WRITE,
+                "random password for the neo4j database user"));
     }
 
     /** The install destination, which is a live installation rather than a staging area. */

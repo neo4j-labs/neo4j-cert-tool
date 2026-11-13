@@ -43,6 +43,7 @@ the --node option is in the form of name:[hostname,ipaddr], the option needs at 
   - [Where the constraint is, and is not, enforced](#where-the-constraint-is-and-is-not-enforced)
 - [Trusting the CA on your machine](#trusting-the-ca-on-your-machine)
   - [Java clients: the generated truststore](#java-clients-the-generated-truststore)
+- [Generating a database credential](#generating-a-database-credential)
 - [What the certificates contain](#what-the-certificates-contain)
 - [Private key protection](#private-key-protection)
 - [File permissions](#file-permissions)
@@ -677,6 +678,37 @@ A driver application needs no system property — hand the keystore to the drive
 configuration instead. `neo4j-cert-tool verify` checks the truststore is present, loadable, and
 covers every anchor the bundles trust.
 
+## Generating a database credential
+
+A deployment needs a strong initial database password as well as certificates, so the tool can
+generate one and put it in a file:
+
+```bash
+# on its own — writes ./db-credential and nothing else
+neo4j-cert-tool --db-credential-file ./db-credential
+
+# or alongside a generate run, so one command produces everything
+neo4j-cert-tool --node core1:core1.example.com \
+  --generate-password \
+  --db-credential-file ./db-credential \
+  --out ./certs
+```
+
+The file holds one line — the password for the `neo4j` database user — and is created mode `0600`,
+readable only by its owner. The password is generated with the same strength as the key passwords
+(192 bits, base64url, so every character is safe in configuration files and connection strings),
+and it is never printed: the file is its only delivery. An existing credential file is never
+overwritten unless `--force` is given, so a re-run cannot silently replace a password a deployment
+depends on.
+
+Use it where the deployment needs it:
+
+```bash
+docker run -d --name neo4j \
+  -e NEO4J_AUTH="neo4j/$(cat ./db-credential)" \
+  ...
+```
+
 ## What the certificates contain
 
 Matched to what Neo4j 2025.x requires:
@@ -1077,7 +1109,7 @@ mvn verify
 mvn verify
 ```
 
-414 test executions (314 test methods). Alongside the unit tests for the DER encoder, PEM handling,
+457 test executions (350 test methods). Alongside the unit tests for the DER encoder, PEM handling,
 key encryption, password file parsing and argument parsing, the suite:
 
 - **completes real TLS handshakes** over loopback using the generated files, loading them the way

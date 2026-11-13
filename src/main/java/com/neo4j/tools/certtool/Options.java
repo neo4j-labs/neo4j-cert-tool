@@ -31,6 +31,8 @@ import java.util.Set;
  * @param existingCaCertificate an existing CA certificate to issue from, instead of a new one
  * @param existingCaKey the matching CA private key
  * @param caPasswordFile password file for an existing CA key
+ * @param dbCredentialFile write a generated random password for the neo4j database user to this
+ *     file, mode 0600; works alongside a generate run or on its own, with no cluster members
  * @param nameConstraints whether to bind a generated CA to the names it was created for
  * @param permitDns extra DNS subtrees the CA may issue within
  * @param permitIp extra address ranges the CA may issue within
@@ -67,6 +69,7 @@ public record Options(
         Optional<Path> existingCaCertificate,
         Optional<Path> existingCaKey,
         Optional<Path> caPasswordFile,
+        Optional<Path> dbCredentialFile,
         boolean nameConstraints,
         List<String> permitDns,
         List<String> permitIp,
@@ -177,6 +180,7 @@ public record Options(
                 Optional.empty(),
                 false,
                 Pkcs8.DEFAULT_ITERATIONS,
+                Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
