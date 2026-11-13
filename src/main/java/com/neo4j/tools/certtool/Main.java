@@ -227,17 +227,19 @@ public final class Main {
                 .toList();
 
         for (Path root : roots) {
+            List<DryRun.PlannedEntry> here = plan.entries().stream()
+                    .filter(entry -> bySpecificity.stream()
+                            .filter(entry.path()::startsWith)
+                            .findFirst()
+                            .filter(root::equals)
+                            .isPresent())
+                    .toList();
+            if (here.isEmpty()) {
+                continue;
+            }
             out.println();
             out.println("Under " + root + ":");
-            for (DryRun.PlannedEntry entry : plan.entries()) {
-                boolean belongsHere = bySpecificity.stream()
-                        .filter(entry.path()::startsWith)
-                        .findFirst()
-                        .filter(root::equals)
-                        .isPresent();
-                if (!belongsHere) {
-                    continue;
-                }
+            for (DryRun.PlannedEntry entry : here) {
                 String relative = root.relativize(entry.path()).toString();
                 String name = (relative.isEmpty() ? "." : relative) + (entry.directory() ? "/" : "");
                 out.printf(
@@ -248,7 +250,27 @@ public final class Main {
             }
         }
 
-        if (options.trustMode().usesCa() && options.existingCaCertificate().isEmpty()) {
+        // The db credential usually lives outside the output directory, and a dry run that hides
+        // a file the run would create is lying. Show what no destination above covers.
+        List<DryRun.PlannedEntry> elsewhere = plan.entries().stream()
+                .filter(entry -> bySpecificity.stream().noneMatch(entry.path()::startsWith))
+                .toList();
+        if (!elsewhere.isEmpty()) {
+            out.println();
+            out.println("Elsewhere:");
+            for (DryRun.PlannedEntry entry : elsewhere) {
+                out.printf(
+                        "  %-46s %-17s%s%n",
+                        entry.path(),
+                        FilePermissions.describe(entry.permissions()),
+                        entry.note() == null ? "" : "  " + entry.note());
+            }
+        }
+
+        boolean credentialOnly = options.nodes().isEmpty() && options.dbCredentialFile().isPresent();
+        if (options.trustMode().usesCa()
+                && options.existingCaCertificate().isEmpty()
+                && !credentialOnly) {
             out.println();
             out.println("Would generate a new certificate authority. Keep it off the cluster machines.");
             var constraints = options.nameConstraints()
@@ -265,16 +287,23 @@ public final class Main {
             }
         }
         out.println();
-        out.printf(
-                "Would generate %d key pair(s): %d node(s) x %d scope(s)%s.%n",
-                options.nodes().size() * options.scopes().size()
-                        + (options.trustMode().usesCa() && options.existingCaCertificate().isEmpty()
-                                ? options.trustMode() == com.neo4j.tools.certtool.model.TrustMode.INTERMEDIATE ? 2 : 1
-                                : 0),
-                options.nodes().size(),
-                options.scopes().size(),
-                options.trustMode().usesCa() && options.existingCaCertificate().isEmpty()
-                        ? ", plus the CA" : "");
+        if (credentialOnly) {
+            out.println(
+                    "Would generate no key pairs: a credential-only run writes just the database credential.");
+        } else {
+            out.printf(
+                    "Would generate %d key pair(s): %d node(s) x %d scope(s)%s.%n",
+                    options.nodes().size() * options.scopes().size()
+                            + (options.trustMode().usesCa() && options.existingCaCertificate().isEmpty()
+                                    ? options.trustMode() == com.neo4j.tools.certtool.model.TrustMode.INTERMEDIATE
+                                            ? 2
+                                            : 1
+                                    : 0),
+                    options.nodes().size(),
+                    options.scopes().size(),
+                    options.trustMode().usesCa() && options.existingCaCertificate().isEmpty()
+                            ? ", plus the CA" : "");
+        }
 
         if (plan.wouldSucceed()) {
             out.println();

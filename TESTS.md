@@ -291,8 +291,8 @@ locked-down file.
 | Randomness | `passwordsDiffer` | two runs never generate the same password |
 | Overwrite protection | `existingFileIsProtected` | an existing credential file is refused without `--force`, and `--force` replaces it |
 | Combined run | `alongsideAClusterRun` | a cluster run writes the credential alongside the bundles, names it in the summary, and never prints the password |
-| Dry run | `dryRunPlansIt` | a dry run with a cluster plans the credential and writes nothing |
-| Dry run | `standaloneDryRunPlansOnlyTheCredential` | a credential-only dry run plans exactly one file and creates no output directory |
+| Dry run | `dryRunPlansIt` | a dry run with a cluster plans the credential and writes nothing, and prints the credential's path even though it sits outside `--out` |
+| Dry run | `standaloneDryRunPlansOnlyTheCredential` | a credential-only dry run plans exactly one file, names it, announces that no key pairs are generated, and creates no output directory |
 
 ## `UpdateTest` — self-update
 

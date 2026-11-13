@@ -150,6 +150,10 @@ class DbCredentialTest {
         assertFalse(Files.exists(credential), "a dry run must not write the credential");
         assertFalse(Files.exists(scopedWork.resolve("out")), "nor any certificate material");
         assertTrue(out.toString().contains("Would create"), out.toString());
+        // The credential usually lives outside --out, so the plan must show it somewhere a
+        // reader will look — a dry run that hides a file the run would create is lying.
+        assertTrue(out.toString().contains("Elsewhere:"), out.toString());
+        assertTrue(out.toString().contains(credential.toString()), out.toString());
     }
 
     @Test
@@ -172,5 +176,10 @@ class DbCredentialTest {
         assertFalse(Files.exists(credential), "a dry run must not write the credential");
         assertFalse(Files.exists(work.resolve("out")), "no output directory is created");
         assertTrue(out.toString().contains("1 files and 0 directories"), out.toString());
+        assertTrue(out.toString().contains(credential.toString()), out.toString());
+        // No keys are generated, so the plan must not talk about key pairs or a new CA.
+        assertTrue(out.toString().contains("Would generate no key pairs"), out.toString());
+        assertFalse(out.toString().contains("plus the CA"), out.toString());
+        assertFalse(out.toString().contains("Under "), out.toString());
     }
 }
