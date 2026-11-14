@@ -32,6 +32,10 @@ jobs:
 
       - name: Review the dependency changes
         uses: actions/dependency-review-action@4901385134134e04cec5fbe5ddfe3b2c5bd5d976 # v4
+        with:
+          # Only permissively-licensed dependencies may enter the build, even at test
+          # scope: nothing copyleft-aggressive or unknown can ever land in the pom.
+          allow-licenses: Apache-2.0, MIT, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, EPL-2.0
 
   build:
     name: ${{ matrix.os }} / JDK ${{ matrix.java }}

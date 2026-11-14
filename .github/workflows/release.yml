@@ -94,7 +94,7 @@ jobs:
           mkdir -p "dist/$STAGE/bin" "dist/$STAGE/scripts"
           cp bin/neo4j-cert-tool.jar "dist/$STAGE/bin/"
           cp scripts/neo4j-cert-tool scripts/neo4j-cert-tool.cmd "dist/$STAGE/scripts/"
-          cp README.md LICENSE "dist/$STAGE/"
+          cp README.md LICENSE NOTICE.md "dist/$STAGE/"
 
           # A ready-to-run bundle: jar plus wrappers, laid out as the wrappers expect.
           (cd dist && zip -qr "$STAGE.zip" "$STAGE")
